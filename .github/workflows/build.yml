@@ -24,13 +24,22 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Get Flutter dependencies
-        run: flutter pub get
+      - name: Create Flutter Project & Build APK
+        run: |
+          mkdir -p /tmp/tarrific-code
+          cp -r lib /tmp/tarrific-code/
+          cp pubspec.yaml /tmp/tarrific-code/
+          cd /tmp
+          flutter create --org com.tarrific tarrific_chat
+          cp -r /tmp/tarrific-code/lib/* tarrific_chat/lib/
+          cp /tmp/tarrific-code/pubspec.yaml tarrific_chat/
+          cd tarrific_chat
+          flutter pub get
+          flutter build apk --release
+          mkdir -p $GITHUB_WORKSPACE/build/app/outputs/flutter-apk
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/build/app/outputs/flutter-apk/
 
-      - name: Build Android APK
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: tarrific-chat-apk
@@ -42,7 +51,7 @@ jobs:
           artifacts: "build/app/outputs/flutter-apk/app-release.apk"
           tag: v${{ github.run_number }}
           name: "TARRIFIC CHAT v${{ github.run_number }}"
-          body: "Auto-generated release - TARRIFIC CHAT"
+          body: "TARRIFIC CHAT Release"
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
 
@@ -58,14 +67,23 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
-      - name: Build Web
-        run: flutter build web --release
+      - name: Create Flutter Project & Build Web
+        run: |
+          mkdir -p /tmp/tarrific-code
+          cp -r lib /tmp/tarrific-code/
+          cp pubspec.yaml /tmp/tarrific-code/
+          cd /tmp
+          flutter create --org com.tarrific tarrific_chat
+          cp -r /tmp/tarrific-code/lib/* tarrific_chat/lib/
+          cp /tmp/tarrific-code/pubspec.yaml tarrific_chat/
+          cd tarrific_chat
+          flutter config --enable-web
+          flutter pub get
+          flutter build web --release
+          cp -r build/web $GITHUB_WORKSPACE/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+          publish_dir: ./web
