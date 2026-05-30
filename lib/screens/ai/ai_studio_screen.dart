@@ -8,7 +8,7 @@ class AIStudioScreen extends StatefulWidget {
   State<AIStudioScreen> createState() => _AIStudioScreenState();
 }
 
-class _AIStudioScreenState extends State<<AIStudioScreen> {
+class _AIStudioScreenState extends State<AIStudioScreen> {
   int _selectedTool = 0;
   final _chatController = TextEditingController();
   final List<Map<String, dynamic>> _chatMessages = [];
