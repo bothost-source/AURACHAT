@@ -1,6 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../themes/app_theme.dart';
+import '../../services/notification_service.dart';
+import 'otp_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,6 +34,11 @@ class _LoginScreenState extends State<LoginScreen> {
     {'code': '+212', 'name': 'Morocco', 'flag': '🇲🇦'},
     {'code': '+233', 'name': 'Ghana', 'flag': '🇬🇭'},
   ];
+
+  String _generateOTP() {
+    final random = Random();
+    return List.generate(6, (_) => random.nextInt(10)).join();
+  }
 
   void _showCountryPicker() {
     showModalBottomSheet(
@@ -75,9 +83,28 @@ class _LoginScreenState extends State<LoginScreen> {
   void _requestOTP() async {
     if (_phoneController.text.isEmpty) return;
     setState(() => _isLoading = true);
+    
     await Future.delayed(const Duration(seconds: 2));
+    
+    final otp = _generateOTP();
+    final fullPhone = '$_selectedCountry ${_phoneController.text}';
+    
+    // Show local notification with OTP
+    await NotificationService.showOTP(otp, fullPhone);
+    
     setState(() => _isLoading = false);
-    if (mounted) Navigator.pushNamed(context, '/otp');
+    
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpScreen(
+            phoneNumber: fullPhone,
+            expectedOtp: otp,
+          ),
+        ),
+      );
+    }
   }
 
   @override
