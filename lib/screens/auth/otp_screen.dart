@@ -5,11 +5,13 @@ import '../../themes/app_theme.dart';
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
   final String expectedOtp;
+  final String cleanPhoneNumber;
 
   const OtpScreen({
     super.key,
     required this.phoneNumber,
     required this.expectedOtp,
+    required this.cleanPhoneNumber,
   });
 
   @override
