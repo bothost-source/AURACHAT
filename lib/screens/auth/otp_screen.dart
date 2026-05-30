@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // ADD THIS IMPORT
 import '../../themes/app_theme.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -61,10 +62,8 @@ class _OtpScreenState extends State<OtpScreen> {
     setState(() => _isLoading = false);
 
     if (enteredOtp == widget.expectedOtp) {
-      // Correct OTP
       if (mounted) Navigator.pushReplacementNamed(context, '/setup_profile');
     } else {
-      // Wrong OTP
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -111,13 +110,20 @@ class _OtpScreenState extends State<OtpScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.bgInput,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _focusNodes[index].hasFocus ? AppTheme.primaryGreen : AppTheme.divider, width: _focusNodes[index].hasFocus ? 2 : 1),
+                    border: Border.all(
+                      color: _focusNodes[index].hasFocus ? AppTheme.primaryGreen : AppTheme.divider,
+                      width: _focusNodes[index].hasFocus ? 2 : 1,
+                    ),
                   ),
                   child: TextField(
                     controller: _controllers[index],
                     focusNode: _focusNodes[index],
                     textAlign: TextAlign.center,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,  // ONLY NUMBERS ALLOWED
+                      LengthLimitingTextInputFormatter(1),
+                    ],
                     maxLength: 1,
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                     decoration: const InputDecoration(counterText: '', border: InputBorder.none),
