@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../themes/app_theme.dart';
 
 class AIStudioScreen extends StatefulWidget {
-  const AIStudioScreen({super.key});
+      AIStudioScreen({super.key});
 
   @override
   State<<AIStudioScreen> createState() => _AIStudioScreenState();
