@@ -91,7 +91,7 @@ class TarrificChatApp extends StatelessWidget {
               '/public_profile': (context) => const PublicProfileScreen(),
               '/report': (context) => const ReportScreen(),
               '/appeal': (context) => const AppealScreen(),
-              '/ai_studio': (context) => const AIStudioScreen(),
+              '/ai_studio': (context) => AIStudioScreen(),
               '/channel': (context) => const ChannelScreen(),
               '/calls': (context) => const CallsScreen(),
               '/global_search': (context) => const GlobalSearchScreen(),
