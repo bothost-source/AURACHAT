@@ -21,24 +21,15 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: Save code and create project
+      # Generate android/ folder if missing, then build
+      - name: Create Android project & Build APK
         run: |
-          mkdir -p /tmp/my-code
-          cp -r lib /tmp/my-code/
-          cp pubspec.yaml /tmp/my-code/
-          cd /tmp
-          flutter create --org com.tarrific tarrific_chat
-          rm -rf tarrific_chat/lib
-          cp -r /tmp/my-code/lib tarrific_chat/
-          cp /tmp/my-code/pubspec.yaml tarrific_chat/
-          cd tarrific_chat
+          flutter create . --platforms=android
           flutter pub get
           flutter build apk --release
-          mkdir -p $GITHUB_WORKSPACE/build/app/outputs/flutter-apk
-          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/build/app/outputs/flutter-apk/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -65,27 +56,19 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: Save code and create project
+      # Generate web/ folder if missing, then build
+      - name: Create Web project & Build
         run: |
-          mkdir -p /tmp/my-code
-          cp -r lib /tmp/my-code/
-          cp pubspec.yaml /tmp/my-code/
-          cd /tmp
-          flutter create --org com.tarrific tarrific_chat
-          rm -rf tarrific_chat/lib
-          cp -r /tmp/my-code/lib tarrific_chat/
-          cp /tmp/my-code/pubspec.yaml tarrific_chat/
-          cd tarrific_chat
           flutter config --enable-web
+          flutter create . --platforms=web
           flutter pub get
           flutter build web --release
-          cp -r build/web $GITHUB_WORKSPACE/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web
+          publish_dir: ./build/web
