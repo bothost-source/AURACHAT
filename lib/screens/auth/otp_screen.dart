@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../themes/app_theme.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key});
+  final String phoneNumber;  // ADDED
+  
+  const OtpScreen({super.key, required this.phoneNumber});  // ADDED required
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -72,7 +74,10 @@ class _OtpScreenState extends State<OtpScreen> {
                   style: TextStyle(fontSize: 15, color: AppTheme.textSecondary, height: 1.5),
                   children: [
                     const TextSpan(text: 'Enter the 6-digit code sent to '),
-                    TextSpan(text: '+234 80 •••• ••78', style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    TextSpan(
+                      text: widget.phoneNumber,  // FIXED: use actual number
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
                   ],
                 ),
               ),
