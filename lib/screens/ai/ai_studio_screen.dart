@@ -34,7 +34,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
         _isTyping = false;
         _chatMessages.add({
           'role': 'ai',
-          'content': 'I'm your ${_tools[_selectedTool]['name']}. I can help you with that request. This is a demo response — in production, this would connect to GPT-4o or your chosen AI model.',
+          'content': "I'm your ${_tools[_selectedTool]['name']}. I can help you with that request. This is a demo response — in production, this would connect to GPT-4o or your chosen AI model.",
         });
       });
     });
