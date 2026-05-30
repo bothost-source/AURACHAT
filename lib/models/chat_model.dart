@@ -50,6 +50,18 @@ class ChatModel {
   final bool selfDestructEnabled;
   final int? selfDestructTimer;
 
+  // NEW: Demo flag to filter out fake chats
+  final bool isDemo;
+
+  // NEW: Online count for groups/channels
+  final int onlineCount;
+
+  // NEW: Members list for groups
+  final List<GroupMember> members;
+
+  // NEW: Subscribers list for channels
+  final List<GroupMember> subscribers;
+
   const ChatModel({
     required this.id,
     required this.type,
@@ -87,6 +99,11 @@ class ChatModel {
     this.secretChatExpiry,
     this.selfDestructEnabled = false,
     this.selfDestructTimer,
+    // NEW fields with defaults
+    this.isDemo = false,
+    this.onlineCount = 0,
+    this.members = const [],
+    this.subscribers = const [],
   });
 
   bool get isGroup => type == ChatType.group;
@@ -102,7 +119,11 @@ class ChatModel {
   }
 
   String get subtitle {
-    if (lastMessage == null) return '';
+    if (lastMessage == null) {
+      if (isGroup) return '$memberCount members';
+      if (isChannel) return '$subscriberCount subscribers';
+      return '';
+    }
     if (lastMessage!.isDeleted) return 'This message was deleted';
     if (lastMessage!.isRestricted) return '⚠️ Restricted content';
     if (lastMessage!.type == MessageType.image) return '📷 Photo';
@@ -172,6 +193,11 @@ class ChatModel {
     DateTime? secretChatExpiry,
     bool? selfDestructEnabled,
     int? selfDestructTimer,
+    // NEW copyWith params
+    bool? isDemo,
+    int? onlineCount,
+    List<GroupMember>? members,
+    List<GroupMember>? subscribers,
   }) {
     return ChatModel(
       id: id ?? this.id,
@@ -210,6 +236,55 @@ class ChatModel {
       secretChatExpiry: secretChatExpiry ?? this.secretChatExpiry,
       selfDestructEnabled: selfDestructEnabled ?? this.selfDestructEnabled,
       selfDestructTimer: selfDestructTimer ?? this.selfDestructTimer,
+      // NEW
+      isDemo: isDemo ?? this.isDemo,
+      onlineCount: onlineCount ?? this.onlineCount,
+      members: members ?? this.members,
+      subscribers: subscribers ?? this.subscribers,
     );
   }
+}
+
+// NEW: Group Member Model
+@immutable
+class GroupMember {
+  final String id;
+  final String name;
+  final String? photoUrl;
+  final MemberRole role;
+  final bool isOnline;
+  final DateTime joinedAt;
+
+  const GroupMember({
+    required this.id,
+    required this.name,
+    this.photoUrl,
+    this.role = MemberRole.member,
+    this.isOnline = false,
+    required this.joinedAt,
+  });
+
+  GroupMember copyWith({
+    String? id,
+    String? name,
+    String? photoUrl,
+    MemberRole? role,
+    bool? isOnline,
+    DateTime? joinedAt,
+  }) {
+    return GroupMember(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      photoUrl: photoUrl ?? this.photoUrl,
+      role: role ?? this.role,
+      isOnline: isOnline ?? this.isOnline,
+      joinedAt: joinedAt ?? this.joinedAt,
+    );
+  }
+}
+
+enum MemberRole {
+  admin,
+  moderator,
+  member,
 }
