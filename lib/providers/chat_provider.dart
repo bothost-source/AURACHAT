@@ -473,4 +473,29 @@ class ChatProvider extends ChangeNotifier {
   }
 }
 
+  // ========== ARCHIVED CHATS ==========
+  
+  List<ChatModel> get archivedChats => _chats.where((c) => c.isArchived).toList();
+
+  void unarchiveChat(String chatId) {
+    final index = _chats.indexWhere((c) => c.id == chatId);
+    if (index != -1) {
+      _chats[index] = _chats[index].copyWith(isArchived: false);
+      notifyListeners();
+    }
+  }
+
+  // ========== MUTE DURATION ENUM ==========
+  
+  void muteChat(String chatId, ChatMuteDuration duration) {
+    final index = _chats.indexWhere((c) => c.id == chatId);
+    if (index != -1) {
+      _chats[index] = _chats[index].copyWith(isMuted: true);
+      notifyListeners();
+    }
+  }
+}
+
+// Enum goes OUTSIDE the class
 enum ChatMuteDuration { oneHour, eightHours, twoDays, forever }
+
