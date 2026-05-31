@@ -462,7 +462,7 @@ class ChatProvider extends ChangeNotifier {
   // CLEANUP
   // ==========================================================================
 
-  @override
+    @override
   void dispose() {
     _chatsSubscription?.cancel();
     _messagesSubscription?.cancel();
@@ -471,7 +471,6 @@ class ChatProvider extends ChangeNotifier {
     _firebaseService.dispose();
     super.dispose();
   }
-}
 
   // ========== ARCHIVED CHATS ==========
   
@@ -498,4 +497,3 @@ class ChatProvider extends ChangeNotifier {
 
 // Enum goes OUTSIDE the class
 enum ChatMuteDuration { oneHour, eightHours, twoDays, forever }
-
