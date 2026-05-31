@@ -298,7 +298,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper>
                   backgroundColor: AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedCornerBorderRadius.circular(12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
