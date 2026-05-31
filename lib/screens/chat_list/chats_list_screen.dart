@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../themes/app_theme.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/firebase_chat_service.dart';
+import '../../services/connectivity.dart';
 import '../../models/chat_model.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
@@ -21,6 +23,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearchingUsers = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -45,51 +48,52 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       return;
     }
     setState(() => _isSearchingUsers = true);
-    // TODO: Replace with Firebase search
-    setState(() => _isSearchingUsers = false);
+
+    try {
+      final results = await context.read<ChatProvider>().searchUsers(query);
+      setState(() {
+        _searchResults = results;
+        _isSearchingUsers = false;
+      });
+    } catch (e) {
+      setState(() => _isSearchingUsers = false);
+    }
   }
 
-  void _startRealChat(Map<String, dynamic> user) {
+  void _startRealChat(Map<String, dynamic> user) async {
     final chatProvider = context.read<ChatProvider>();
-    final newChat = ChatModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      displayName: user['displayName'] ?? user['username'] ?? 'Unknown',
-      avatarUrl: user['photoUrl'],
-      participants: [
-        UserModel(
-          id: user['id'] ?? '',
-          username: user['username'] ?? '',
-          displayName: user['displayName'] ?? '',
-          isVerified: user['isVerified'] ?? false,
-          status: UserStatus.online,
-        ),
-      ],
-      lastMessage: null,
-      unreadCount: 0,
-      isPinned: false,
-      isMuted: false,
-      isArchived: false,
-      createdAt: DateTime.now(),
-    );
-    chatProvider.addChat(newChat);
-    Navigator.pushNamed(
-      context,
-      '/chat',
-      arguments: {
-        'chatId': newChat.id,
-        'otherUserId': user['id'],
-        'otherUserName': user['displayName'] ?? user['username'],
-      },
-    );
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Create or get direct chat via Firebase
+      await chatProvider.createDirectChat(user['id'] ?? '');
+
+      // Navigate to chat
+      Navigator.pushNamed(
+        context,
+        '/chat',
+        arguments: {
+          'chatId': chatProvider.selectedChat?.id,
+          'otherUserId': user['id'],
+          'otherUserName': user['displayName'] ?? user['username'],
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error starting chat: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  // NEW: Create Group
-    // NEW: Create Group with full settings
+  // Create Group with Firebase
   void _showCreateGroup() {
     final nameController = TextEditingController();
     final descController = TextEditingController();
     bool isPublic = true;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -113,7 +117,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               const SizedBox(height: 20),
               const Text('New Group', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
               const SizedBox(height: 16),
-              
+
               // Group Photo
               Center(
                 child: Stack(
@@ -144,7 +148,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               TextField(
                 controller: nameController,
                 style: const TextStyle(color: AppTheme.textPrimary),
@@ -171,7 +175,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Group Type Toggle
               Text('Group Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
@@ -232,56 +236,32 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameController.text.isEmpty) return;
-                    
-                    final currentUser = context.read<AuthProvider>().currentUser;
-                    
-                    final groupChat = ChatModel(
-                      id: 'group_${DateTime.now().millisecondsSinceEpoch}',
-                      displayName: nameController.text,
-                      isGroup: true,
-                      isPublic: isPublic,
-                      description: descController.text,
-                      creatorId: currentUser?.uid ?? 'me',
-                      admins: [currentUser?.uid ?? 'me'],
-                      members: [
-                        GroupMember(
-                          id: currentUser?.uid ?? 'me',
-                          name: currentUser?.displayName ?? 'You',
-                          role: MemberRole.admin,
-                          isOnline: true,
-                          joinedAt: DateTime.now(),
-                        ),
-                      ],
-                      memberCount: 1,
-                      onlineCount: 1,
-                      participants: [],
-                      lastMessage: null,
-                      unreadCount: 0,
-                      isPinned: false,
-                      isMuted: false,
-                      isArchived: false,
-                      createdAt: DateTime.now(),
-                    );
-                    
-                    context.read<ChatProvider>().addChat(groupChat);
+
                     Navigator.pop(context);
-                    
-                    // Navigate to group chat
-                    Navigator.pushNamed(
-                      context,
-                      '/chat',
-                      arguments: {
-                        'chatId': groupChat.id,
-                        'isGroup': true,
-                      },
-                    );
+
+                    try {
+                      await context.read<ChatProvider>().createGroupChat(
+                        name: nameController.text,
+                        description: descController.text.isNotEmpty ? descController.text : null,
+                        memberIds: [], // TODO: Add member selection
+                        isPublic: isPublic,
+                      );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Group created successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
@@ -300,12 +280,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
     );
   }
 
-  // NEW: Create Channel with subscribers
+  // Create Channel with Firebase
   void _showCreateChannel() {
     final nameController = TextEditingController();
     final descController = TextEditingController();
     bool isPublic = true;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -329,7 +309,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               const SizedBox(height: 20),
               const Text('New Channel', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
               const SizedBox(height: 16),
-              
+
               // Channel Photo
               Center(
                 child: Stack(
@@ -360,7 +340,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               TextField(
                 controller: nameController,
                 style: const TextStyle(color: AppTheme.textPrimary),
@@ -387,7 +367,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Channel Type Toggle
               Text('Channel Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
@@ -448,56 +428,31 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameController.text.isEmpty) return;
-                    
-                    final currentUser = context.read<AuthProvider>().currentUser;
-                    
-                    final channelChat = ChatModel(
-                      id: 'channel_${DateTime.now().millisecondsSinceEpoch}',
-                      displayName: nameController.text,
-                      isChannel: true,
-                      isPublic: isPublic,
-                      description: descController.text,
-                      creatorId: currentUser?.uid ?? 'me',
-                      admins: [currentUser?.uid ?? 'me'],
-                      subscribers: [
-                        GroupMember(
-                          id: currentUser?.uid ?? 'me',
-                          name: currentUser?.displayName ?? 'You',
-                          role: MemberRole.admin,
-                          isOnline: true,
-                          joinedAt: DateTime.now(),
-                        ),
-                      ],
-                      subscriberCount: 1,
-                      onlineCount: 1,
-                      participants: [],
-                      lastMessage: null,
-                      unreadCount: 0,
-                      isPinned: false,
-                      isMuted: false,
-                      isArchived: false,
-                      createdAt: DateTime.now(),
-                    );
-                    
-                    context.read<ChatProvider>().addChat(channelChat);
+
                     Navigator.pop(context);
-                    
-                    // Navigate to channel
-                    Navigator.pushNamed(
-                      context,
-                      '/chat',
-                      arguments: {
-                        'chatId': channelChat.id,
-                        'isChannel': true,
-                      },
-                    );
+
+                    try {
+                      await context.read<ChatProvider>().createChannel(
+                        name: nameController.text,
+                        description: descController.text.isNotEmpty ? descController.text : null,
+                        isPublic: isPublic,
+                      );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Channel created successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
@@ -514,6 +469,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
         ),
       ),
     );
+  }
 
   void _showUserSearch() {
     showModalBottomSheet(
@@ -605,64 +561,68 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final realPinnedChats = chatProvider.pinnedChats.where((chat) => !chat.isDemo).toList();
-    final realUnpinnedChats = chatProvider.unpinnedChats.where((chat) => !chat.isDemo).toList();
+    final allChats = chatProvider.chats;
+    final pinnedChats = chatProvider.pinnedChats;
+    final unpinnedChats = chatProvider.unpinnedChats;
+    final isLoading = chatProvider.isLoading;
 
     return Scaffold(
       backgroundColor: AppTheme.bgPrimary,
       appBar: _isSearching ? _buildSearchAppBar() : _buildMainAppBar(themeProvider),
-      body: RefreshIndicator(
-        onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
-        color: AppTheme.primaryGreen,
-        backgroundColor: AppTheme.bgSecondary,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            if (realPinnedChats.isNotEmpty) ...[
-              _buildSectionHeader('PINNED'),
-              ...realPinnedChats.map((chat) => _buildChatTile(chat)),
-              Divider(color: AppTheme.divider, indent: 80),
-            ],
-            if (realUnpinnedChats.isNotEmpty) ...[
-              if (realPinnedChats.isNotEmpty) _buildSectionHeader('ALL CHATS'),
-              ...realUnpinnedChats.map((chat) => _buildChatTile(chat)),
-            ],
-            if (realPinnedChats.isEmpty && realUnpinnedChats.isEmpty)
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(color: AppTheme.bgElevated, shape: BoxShape.circle),
-                        child: Icon(Icons.chat_bubble_outline, size: 60, color: AppTheme.textTertiary.withOpacity(0.5)),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text('No chats yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                      const SizedBox(height: 8),
-                      Text('Find people and start chatting!', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: _showUserSearch,
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Find People'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryGreen,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen))
+          : RefreshIndicator(
+              onRefresh: () async => await chatProvider.refreshChats(),
+              color: AppTheme.primaryGreen,
+              backgroundColor: AppTheme.bgSecondary,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  if (pinnedChats.isNotEmpty) ...[
+                    _buildSectionHeader('PINNED'),
+                    ...pinnedChats.map((chat) => _buildChatTile(chat)),
+                    Divider(color: AppTheme.divider, indent: 80),
+                  ],
+                  if (unpinnedChats.isNotEmpty) ...[
+                    if (pinnedChats.isNotEmpty) _buildSectionHeader('ALL CHATS'),
+                    ...unpinnedChats.map((chat) => _buildChatTile(chat)),
+                  ],
+                  if (allChats.isEmpty)
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(color: AppTheme.bgElevated, shape: BoxShape.circle),
+                              child: Icon(Icons.chat_bubble_outline, size: 60, color: AppTheme.textTertiary.withOpacity(0.5)),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text('No chats yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                            const SizedBox(height: 8),
+                            Text('Find people and start chatting!', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: _showUserSearch,
+                              icon: const Icon(Icons.person_add),
+                              label: const Text('Find People'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryGreen,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showUserSearch,
         backgroundColor: AppTheme.primaryGreen,
@@ -671,14 +631,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
     );
   }
 
-  // UPDATED: Added theme toggle button
   AppBar _buildMainAppBar(ThemeProvider themeProvider) {
     return AppBar(
       backgroundColor: AppTheme.bgSecondary,
       elevation: 0,
       title: const Text('TARRIFIC CHAT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
       actions: [
-        // NEW: Theme toggle button
         IconButton(
           icon: Icon(
             themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
@@ -696,10 +654,10 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
           onSelected: (value) {
             switch (value) {
               case 'new_group':
-                _showCreateGroup(); // NOW WORKS!
+                _showCreateGroup();
                 break;
               case 'new_channel':
-                _showCreateChannel(); // NOW WORKS!
+                _showCreateChannel();
                 break;
               case 'saved':
                 Navigator.pushNamed(context, '/saved_messages');
