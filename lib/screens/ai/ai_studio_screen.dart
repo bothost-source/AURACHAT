@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../themes/app_theme.dart';
 
 class AIStudioScreen extends StatefulWidget {
-      AIStudioScreen({super.key});
+  AIStudioScreen({super.key});
 
   @override
   State<AIStudioScreen> createState() => _AIStudioScreenState();
@@ -13,6 +16,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   final _chatController = TextEditingController();
   final List<Map<String, dynamic>> _chatMessages = [];
   bool _isTyping = false;
+  String? _apiKey = 'AQ.Ab8RN6JBqWi1X3W9UsCpBBdL-0aTW7v3ZPfylD-wHqgaNzKz0Q';  // <-- PASTE YOUR KEY HERE
 
   final List<Map<String, dynamic>> _tools = [
     {'name': 'AI Chatbot', 'icon': Icons.chat_bubble, 'color': AppTheme.primaryGreen, 'desc': 'Conversational AI assistant'},
@@ -21,21 +25,82 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
     {'name': 'AI Voice', 'icon': Icons.mic, 'color': AppTheme.accentPink, 'desc': 'Text-to-speech & voice'},
   ];
 
-  void _sendMessage() {
+  @override
+  void initState() {
+    super.initState();
+    _loadApiKey();
+  }
+
+  Future<void> _loadApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _apiKey = prefs.getString('ai_api_key'));
+  }
+
+  // NEW: Real AI response using Gemini API
+  Future<String> _getAIResponse(String userMessage) async {
+    if (_apiKey == null || _apiKey!.isEmpty) {
+      return '⚠️ Please add your API key in Settings > AI Settings';
+    }
+
+    try {
+      final url = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=$_apiKey'
+      );
+
+      // Customize prompt based on tool
+      String prompt = userMessage;
+      if (_selectedTool == 1) { // AI Writer
+        prompt = 'As a professional writer, $userMessage';
+      } else if (_selectedTool == 2) { // AI Image
+        prompt = 'Describe an image: $userMessage';
+      } else if (_selectedTool == 3) { // AI Voice
+        prompt = 'Convert to natural speech: $userMessage';
+      }
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [{
+            'parts': [{'text': prompt}]
+          }]
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['candidates'][0]['content']['parts'][0]['text'];
+      } else {
+        return 'Error: ${response.statusCode}. Please check your API key.';
+      }
+    } catch (e) {
+      return 'Error: $e. Please check your internet connection.';
+    }
+  }
+
+  void _sendMessage() async {
     if (_chatController.text.trim().isEmpty) return;
+    
+    final userMessage = _chatController.text.trim();
+    
     setState(() {
-      _chatMessages.add(<String, dynamic>{'role': 'user', 'content': _chatController.text});
+      _chatMessages.add({
+        'role': 'user',
+        'content': userMessage,
+      });
       _isTyping = true;
     });
+    
     _chatController.clear();
 
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isTyping = false;
-        _chatMessages.add(<String, dynamic>{
-          'role': 'ai',
-          'content': "I'm your ${_tools[_selectedTool]['name']}. I can help you with that request. This is a demo response - in production, this would connect to GPT-4o or your chosen AI model.",
-        });
+    // Get REAL AI response
+    final aiResponse = await _getAIResponse(userMessage);
+
+    setState(() {
+      _isTyping = false;
+      _chatMessages.add({
+        'role': 'ai',
+        'content': aiResponse,
       });
     });
   }
@@ -51,7 +116,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history, color: AppTheme.textPrimary),
-            onPressed: () {},
+            onPressed: () => _showHistory(),
           ),
         ],
       ),
@@ -103,6 +168,30 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
               },
             ),
           ),
+
+          // API Key Warning
+          if (_apiKey == null || _apiKey!.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: AppTheme.warning.withOpacity(0.1),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: AppTheme.warning, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'No API key found. Add one in Settings > AI Settings.',
+                      style: TextStyle(fontSize: 12, color: AppTheme.warning, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/settings'),
+                    child: const Text('Settings', style: TextStyle(color: AppTheme.primaryGreen)),
+                  ),
+                ],
+              ),
+            ),
 
           // Tool Info
           Container(
@@ -171,7 +260,11 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                           ),
                           child: Text(
                             msg['content'],
-                            style: TextStyle(fontSize: 15, color: isUser ? AppTheme.textPrimary : AppTheme.textSecondary, height: 1.5),
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: isUser ? AppTheme.textPrimary : AppTheme.textSecondary,
+                              height: 1.5,
+                            ),
                           ),
                         ),
                       );
@@ -264,6 +357,66 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
       decoration: BoxDecoration(
         color: AppTheme.textTertiary,
         shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  void _showHistory() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bgModal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Chat History',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_chatMessages.isEmpty)
+              Text(
+                'No history yet',
+                style: TextStyle(color: AppTheme.textTertiary),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _chatMessages.length,
+                  itemBuilder: (context, index) {
+                    final msg = _chatMessages[index];
+                    return ListTile(
+                      leading: Icon(
+                        msg['role'] == 'user' ? Icons.person : Icons.auto_awesome,
+                        color: msg['role'] == 'user' ? AppTheme.primaryGreen : AppTheme.accentCyan,
+                      ),
+                      title: Text(
+                        msg['content'].toString().substring(0, msg['content'].toString().length > 50 ? 50 : msg['content'].toString().length) + '...',
+                        style: const TextStyle(color: AppTheme.textPrimary),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
