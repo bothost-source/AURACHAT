@@ -111,6 +111,12 @@ class MessageModel {
     }
   }
 
+  // Check if message is read by a specific user
+  bool isReadBy(String userId) => readBy.contains(userId);
+
+  // Check if message is delivered to a specific user
+  bool isDeliveredTo(String userId) => deliveredTo.contains(userId);
+
   MessageModel copyWith({
     String? id,
     String? chatId,
@@ -193,6 +199,7 @@ class MessageModel {
     );
   }
 
+  // Convert to JSON for Firebase
   Map<String, dynamic> toJson() => {
     'id': id,
     'chatId': chatId,
@@ -215,7 +222,7 @@ class MessageModel {
     'forwardFromName': forwardFromName,
     'reactions': reactions,
     'pollOptions': pollOptions,
-    'pollVotes': pollVotes,
+    'pollVotes': pollVotes?.map((k, v) => MapEntry(k, v)),
     'isEdited': isEdited,
     'editedAt': editedAt?.toIso8601String(),
     'status': status.name,
@@ -233,4 +240,92 @@ class MessageModel {
     'deliveredTo': deliveredTo,
     'metadata': metadata,
   };
+
+  // Create from JSON (for local storage/offline queue)
+  factory MessageModel.fromJson(Map<String, dynamic> json) {
+    return MessageModel(
+      id: json['id'] ?? '',
+      chatId: json['chatId'] ?? '',
+      senderId: json['senderId'] ?? '',
+      senderName: json['senderName'],
+      senderAvatar: json['senderAvatar'],
+      type: _parseType(json['type']),
+      content: json['content'] ?? '',
+      mediaUrl: json['mediaUrl'],
+      mediaThumbnail: json['mediaThumbnail'],
+      fileName: json['fileName'],
+      fileSize: json['fileSize'],
+      duration: json['duration'],
+      latitude: json['latitude']?.toDouble(),
+      longitude: json['longitude']?.toDouble(),
+      replyToMessageId: json['replyToMessageId'],
+      replyToMessage: json['replyToMessage'] != null ? MessageModel.fromJson(json['replyToMessage']) : null,
+      forwardFromChatId: json['forwardFromChatId'],
+      forwardFromMessageId: json['forwardFromMessageId'],
+      forwardFromName: json['forwardFromName'],
+      reactions: (json['reactions'] as List<dynamic>?)?.cast<String>() ?? [],
+      pollOptions: json['pollOptions'] != null ? Map<String, int>.from(json['pollOptions']) : null,
+      pollVotes: json['pollVotes'] != null 
+          ? (json['pollVotes'] as Map<String, dynamic>).map((k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()))
+          : null,
+      isEdited: json['isEdited'] ?? false,
+      editedAt: json['editedAt'] != null ? DateTime.parse(json['editedAt']) : null,
+      status: _parseStatus(json['status']),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      isDeleted: json['isDeleted'] ?? false,
+      deletedAt: json['deletedAt'] != null ? DateTime.parse(json['deletedAt']) : null,
+      isPinned: json['isPinned'] ?? false,
+      pinOrder: json['pinOrder'],
+      contentFlag: _parseFlag(json['contentFlag']),
+      aiSafetyScore: json['aiSafetyScore']?.toDouble(),
+      aiFlagReason: json['aiFlagReason'],
+      isRestricted: json['isRestricted'] ?? false,
+      restrictionNote: json['restrictionNote'],
+      readBy: (json['readBy'] as List<dynamic>?)?.cast<String>() ?? [],
+      deliveredTo: (json['deliveredTo'] as List<dynamic>?)?.cast<String>() ?? [],
+      metadata: json['metadata'],
+    );
+  }
+
+  static MessageType _parseType(String? type) {
+    switch (type) {
+      case 'image': return MessageType.image;
+      case 'video': return MessageType.video;
+      case 'audio': return MessageType.audio;
+      case 'voice': return MessageType.voice;
+      case 'document': return MessageType.document;
+      case 'location': return MessageType.location;
+      case 'contact': return MessageType.contact;
+      case 'sticker': return MessageType.sticker;
+      case 'poll': return MessageType.poll;
+      case 'forwarded': return MessageType.forwarded;
+      case 'reply': return MessageType.reply;
+      case 'botCommand': return MessageType.botCommand;
+      case 'system': return MessageType.system;
+      default: return MessageType.text;
+    }
+  }
+
+  static MessageStatus _parseStatus(String? status) {
+    switch (status) {
+      case 'sending': return MessageStatus.sending;
+      case 'delivered': return MessageStatus.delivered;
+      case 'read': return MessageStatus.read;
+      case 'failed': return MessageStatus.failed;
+      default: return MessageStatus.sent;
+    }
+  }
+
+  static ContentFlag _parseFlag(String? flag) {
+    switch (flag) {
+      case 'spam': return ContentFlag.spam;
+      case 'illegal': return ContentFlag.illegal;
+      case 'harassment': return ContentFlag.harassment;
+      case 'violence': return ContentFlag.violence;
+      case 'explicit': return ContentFlag.explicit;
+      case 'misinformation': return ContentFlag.misinformation;
+      case 'copyright': return ContentFlag.copyright;
+      default: return ContentFlag.none;
+    }
+  }
 }
