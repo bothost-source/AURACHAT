@@ -28,7 +28,6 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   @override
   void initState() {
     super.initState();
-    _loadApiKey();
   }
 
   Future<void> _loadApiKey() async {
