@@ -165,7 +165,6 @@ class _BotCreatorScreenState extends State<BotCreatorScreen> {
       about: _aboutController.text.isEmpty ? null : _aboutController.text,
       aiPowered: _aiPowered,
       aiModel: _aiPowered ? _selectedModel : null,
-      apiKey: _apiKeyController.text.isEmpty ? null : _apiKeyController.text,
     );
 
     // GENERATE BOT TOKEN (Like BotFather!)
