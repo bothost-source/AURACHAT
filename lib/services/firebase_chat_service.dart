@@ -30,7 +30,7 @@ class FirebaseChatService {
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
-  bool get _isAuthenticated => _currentUserId != null;
+  bool get _isAuthenticated => currentUserId != null;
 
   // Initialize service
   void initialize() {
@@ -119,7 +119,7 @@ class FirebaseChatService {
   }) async {
     if (!_isAuthenticated) throw Exception('Not authenticated');
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
     final chatRef = _firestore.collection('chats').doc();
 
     await chatRef.set({
@@ -144,7 +144,7 @@ class FirebaseChatService {
   Stream<List<ChatModel>> getUserChats() {
     if (!_isAuthenticated) return Stream.value([]);
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
 
     return _firestore
         .collection('chats')
@@ -158,7 +158,7 @@ class FirebaseChatService {
   Stream<List<ChatModel>> getUserGroups() {
     if (!_isAuthenticated) return Stream.value([]);
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
 
     return _firestore
         .collection('chats')
@@ -200,7 +200,7 @@ class FirebaseChatService {
   }) async {
     if (!_isAuthenticated) throw Exception('Not authenticated');
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
     final messageId = '${currentUserId}_${DateTime.now().millisecondsSinceEpoch}';
 
     final message = MessageModel(
@@ -241,7 +241,7 @@ class FirebaseChatService {
   // Actually send to Firebase
   Future<void> _sendToFirebase(MessageModel message, String chatId) async {
     try {
-      final currentUserId = _currentUserId!;
+      final currentUserId = currentUserId!;
 
       // Add message to Firestore
       await _firestore
@@ -381,7 +381,7 @@ class FirebaseChatService {
   Future<void> markAsRead(String chatId) async {
     if (!_isAuthenticated) return;
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
 
     // Get unread messages
     final messages = await _firestore
@@ -413,7 +413,7 @@ class FirebaseChatService {
   Future<void> markAsDelivered(String chatId, String messageId) async {
     if (!_isAuthenticated) return;
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
 
     await _firestore
         .collection('chats')
