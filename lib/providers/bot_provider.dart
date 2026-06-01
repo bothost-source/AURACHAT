@@ -21,7 +21,7 @@ class BotProvider extends ChangeNotifier {
         botId: 'bot_1',
         name: 'TARRIFIC Assistant',
         username: 'tarrific_assistant_bot',
-        description: 'Your personal AI assistant for TARRIFIC CHAT',
+        description: 'Your personal AI assistant for AURACHAT',
         about: 'I can help you with messages, reminders, and business tasks.',
         commands: ['/start', '/help', '/remind', '/translate', '/summarize'],
         commandDescriptions: {
