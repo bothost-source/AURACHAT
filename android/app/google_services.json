@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "539789121540",
+    "project_id": "aurachat-85f54",
+    "storage_bucket": "aurachat-85f54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539789121540:android:96ac597e52dd0a80573d51",
+        "android_client_info": {
+          "package_name": "com.example.aurachat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJV5x8PKgWhHBaavZ6z9rB3DuT3TEFtLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+
+      }
