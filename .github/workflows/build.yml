@@ -29,12 +29,27 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: Create Android project & Build APK
+      - name: Create Android project
         run: |
           flutter create . --platforms=android
           flutter pub get
-          flutter build apk --release --obfuscate --split-debug-info=symbols/
 
+      - name: Add Firebase Config
+        run: |
+          # Create android/app folder if not exists
+          mkdir -p android/app
+          # Copy google-services.json from repo
+          if [ -f "google-services.json" ]; then
+            cp google-services.json android/app/google-services.json
+          fi
+          # Add Firebase plugin to build.gradle
+          sed -i 's/id "com.android.application"/id "com.android.application"\n    id "com.google.gms.google-services"/' android/app/build.gradle
+          # Add Firebase classpath to project build.gradle
+          sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.1"/' android/build.gradle
+
+      - name: Build APK
+        run: |
+          flutter build apk --release --obfuscate --split-debug-info=symbols/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
