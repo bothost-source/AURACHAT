@@ -120,6 +120,7 @@ class ChatProvider extends ChangeNotifier {
       orElse: () => ChatModel(
         id: chatId,
         name: 'Unknown',
+        type: ChatType.direct, 
         participants: [],
         createdAt: DateTime.now(),
       ),
