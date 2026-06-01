@@ -31233,24 +31233,24 @@ var $async$a6J=A.u(function(a,b){if(a===1){p=b
 s=q}while(true)switch(s){case 0:if($.aD==null)A.aUR()
 $.aD.toString
 $.Al().ie(0)
-q=3
-$.aP5().ie(0)
-s=6
-return A.l(A.aeM(),$async$a6J)
-case 6:s=7
+s=2
 return A.l(A.akN(),$async$a6J)
+case 2:q=4
+$.aP5().ie(0)
+s=7
+return A.l(A.aeM(),$async$a6J)
 case 7:q=1
-s=5
+s=6
 break
-case 3:q=2
+case 4:q=3
 f=p
 o=A.an(f)
 A.qk("Firebase init error: "+A.h(o))
-s=5
+s=6
 break
-case 2:s=1
+case 3:s=1
 break
-case 5:A.ari(A.a([B.O5,B.O6],t.UW))
+case 6:A.ari(A.a([B.O5,B.O6],t.UW))
 A.aNf(B.a5U)
 if($.aD==null)A.aUR()
 m=$.aD
