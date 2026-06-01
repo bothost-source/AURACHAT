@@ -63,7 +63,7 @@ class FirebaseChatService {
       // Create new chat
       await chatRef.set({
         'id': chatId,
-        'type': 'direct',
+        'type': 'private',
         'participants': [currentUserId, otherUserId],
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -144,7 +144,7 @@ class FirebaseChatService {
   Stream<List<ChatModel>> getUserChats() {
     if (!_isAuthenticated) return Stream.value([]);
 
-    final currentUserId = currentUserId!;
+    final userId = currentUserId!;
 
     return _firestore
         .collection('chats')
@@ -200,13 +200,13 @@ class FirebaseChatService {
   }) async {
     if (!_isAuthenticated) throw Exception('Not authenticated');
 
-    final currentUserId = currentUserId!;
+    final userId = currentUserId!;
     final messageId = '${currentUserId}_${DateTime.now().millisecondsSinceEpoch}';
 
     final message = MessageModel(
       id: messageId,
       chatId: chatId,
-      senderId: currentUserId,
+      senderId: currentUserId ?? '',
       senderName: _auth.currentUser?.displayName ?? 'You',
       type: type,
       content: content,
@@ -528,7 +528,7 @@ class FirebaseChatService {
             createdAt: DateTime.now(),
           ))
           .toList() ?? [],
-      type: type == 'group' ? ChatType.group : type == 'channel' ? ChatType.channel : ChatType.direct,
+      type: type == 'group' ? ChatType.group : type == 'channel' ? ChatType.channel : ChatType.private,
       isPublic: data['isPublic'] ?? true,
       description: data['description'],
       creatorId: data['creatorId'],
@@ -553,7 +553,7 @@ class FirebaseChatService {
       subscriberCount: data['subscriberCount'] ?? (data['subscribers'] as List?)?.length ?? 0,
       onlineCount: data['onlineCount'] ?? 0,
       unreadCount: data['unreadCount'] != null
-          ? (data['unreadCount'] as Map<String, dynamic>)[_currentUserId] ?? 0
+          ? (data['unreadCount'] as Map<String, dynamic>)[currentUserId ?? ''] ?? 0
           : 0,
       isPinned: false,
       isMuted: false,
