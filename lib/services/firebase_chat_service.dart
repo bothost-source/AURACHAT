@@ -528,8 +528,7 @@ class FirebaseChatService {
             createdAt: DateTime.now(),
           ))
           .toList() ?? [],
-      isGroup: type == 'group',
-      isChannel: type == 'channel',
+      type: type == 'group' ? 'group' : type == 'channel' ? 'channel' : 'direct',
       isPublic: data['isPublic'] ?? true,
       description: data['description'],
       creatorId: data['creatorId'],
