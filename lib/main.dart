@@ -39,7 +39,6 @@ import 'services/notification_service.dart';
 import 'services/connectivity.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/firebase_chat_service.dart';
-import 'services/connectivity.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
