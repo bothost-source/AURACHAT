@@ -54,7 +54,7 @@ class FirebaseChatService {
     if (!_isAuthenticated) throw Exception('Not authenticated');
 
     final userId = currentUserId;
-    final chatId = _getDirectChatId(currentUserId, otherUserId);
+    final chatId = _getDirectChatId(currentUserId!, otherUserId!);
 
     final chatRef = _firestore.collection('chats').doc(chatId);
     final chatDoc = await chatRef.get();
