@@ -84,7 +84,7 @@ class FirebaseChatService {
   }) async {
     if (!_isAuthenticated) throw Exception('Not authenticated');
 
-    final currentUserId = _currentUserId!;
+    final currentUserId = currentUserId!;
     final allMembers = [currentUserId, ...memberIds.where((id) => id != currentUserId)];
 
     final chatRef = _firestore.collection('chats').doc();
