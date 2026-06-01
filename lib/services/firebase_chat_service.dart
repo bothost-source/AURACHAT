@@ -532,7 +532,7 @@ class FirebaseChatService {
       isPublic: data['isPublic'] ?? true,
       description: data['description'],
       creatorId: data['creatorId'],
-      admins: (data['admins'] as List<dynamic>?)?.cast<String>() ?? [],
+      adminIds: (data['admins'] as List<dynamic>?)?.cast<String>() ?? [],
       members: (data['members'] as List<dynamic>?)
           ?.map((m) => GroupMember(
             id: m['userId'] ?? '',
