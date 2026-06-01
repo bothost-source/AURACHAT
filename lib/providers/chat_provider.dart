@@ -415,7 +415,7 @@ class ChatProvider extends ChangeNotifier {
     return chats.where((chat) {
       return chat.displayName.toLowerCase().contains(query) ||
           chat.participants.any((p) => 
-              p.username.toLowerCase().contains(query) ||
+             (p.username ?? '').toLowerCase().contains(query)
               p.displayName.toLowerCase().contains(query));
     }).toList();
   }
