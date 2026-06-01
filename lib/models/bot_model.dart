@@ -38,7 +38,7 @@ class BotModel {
   final Map<String, dynamic>? analytics;
 
   const BotModel({
-    required this.id,
+    required this.botId,
     required this.name,
     required this.username,
     this.description,
@@ -110,7 +110,7 @@ class BotModel {
     Map<String, dynamic>? analytics,
   }) {
     return BotModel(
-      id: id ?? this.id,
+      botId: Id ?? this.botId,
       name: name ?? this.name,
       username: username ?? this.username,
       description: description ?? this.description,
